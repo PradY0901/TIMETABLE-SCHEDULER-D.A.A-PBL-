@@ -1,0 +1,112 @@
+import random
+import copy
+
+class TimetableSchedulerGA:
+    def _init_(self, days, time_slots, population_size):
+        self.days = days
+        self.time_slots = time_slots
+        self.population_size = population_size
+        self.population = []
+
+        # Initialize a random population
+        for _ in range(population_size):
+            individual = {day: {time: None for time in time_slots} for day in days}
+            self.randomly_schedule_events(individual)
+            self.population.append(individual)
+
+    def randomly_schedule_events(self, individual):
+        # Randomly assign events to time slots in the individual
+        events = ["Event1", "Event2", "Event3", "Event4", "Event5"]  # Placeholder event names
+        for day in self.days:
+            for time in self.time_slots:
+                if random.random() < 0.5:  # 50% probability to schedule an event
+                    event = random.choice(events)
+                    individual[day][time] = event
+
+    def fitness(self, individual):
+        # Placeholder fitness function (you can replace it with a more sophisticated one)
+        # For simplicity, this function counts the number of unique events scheduled
+        scheduled_events = set()
+        for day in self.days:
+            for time in self.time_slots:
+                event = individual[day][time]
+                if event:
+                    scheduled_events.add(event)
+        return len(scheduled_events)
+
+    def crossover(self, parent1, parent2):
+        # One-point crossover
+        crossover_point = random.choice(self.days)
+        child = copy.deepcopy(parent1)
+        for day in self.days:
+            if day > crossover_point:
+                child[day] = copy.deepcopy(parent2[day])
+        return child
+
+    def mutate(self, individual, mutation_rate):
+        # Randomly mutate events in the individual with a certain probability
+        for day in self.days:
+            for time in self.time_slots:
+                if random.random() < mutation_rate:
+                    individual[day][time] = None
+
+    def evolve(self, generations, mutation_rate):
+        for generation in range(generations):
+            # Evaluate fitness of each individual in the population
+            fitness_scores = [self.fitness(individual) for individual in self.population]
+
+            # Select parents for crossover based on fitness
+            parents = random.choices(self.population, weights=fitness_scores, k=self.population_size)
+
+            # Create new generation through crossover and mutation
+            new_population = []
+            for i in range(0, self.population_size, 2):
+                parent1, parent2 = parents[i], parents[i + 1]
+                child1 = self.crossover(parent1, parent2)
+                child2 = self.crossover(parent2, parent1)
+                self.mutate(child1, mutation_rate)
+                self.mutate(child2, mutation_rate)
+                new_population.extend([child1, child2])
+
+            self.population = new_population
+
+            # Display the best individual in the current generation
+            best_individual = max(self.population, key=self.fitness)
+            print(f"Generation {generation + 1}, Best Fitness: {self.fitness(best_individual)}")
+            self.display_schedule(best_individual)
+
+    def display_schedule(self, individual):
+        print("\nTimetable Schedule:")
+        for day in self.days:
+            print(f"\n{day}:")
+            for time in self.time_slots:
+                event = individual[day][time]
+                print(f"  {time}: {event if event else 'Free'}")
+
+
+def main():
+    # Define the days and time slots for the timetable
+    days = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"]
+    time_slots = ["9:00 AM", "10:00 AM", "11:00 AM", "12:00 PM", "1:00 PM", "2:00 PM", "3:00 PM", "4:00 PM"]
+
+    # Set the population size and number of generations
+    population_size = 10
+    generations = 50
+
+    # Set the mutation rate
+    mutation_rate = 0.1
+
+    # Create a timetable scheduler using a genetic algorithm
+    scheduler = TimetableSchedulerGA(days, time_slots, population_size)
+
+    # Evolve the population through generations
+    scheduler.evolve(generations, mutation_rate)
+
+    # Display the final schedule
+    best_individual = max(scheduler.population, key=scheduler.fitness)
+    print("\nFinal Timetable Schedule:")
+    scheduler.display_schedule(best_individual)
+
+
+if _name_ == "_main_":
+    main()
